@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -9,7 +11,11 @@ class GpsScreen extends StatefulWidget {
 }
 
 class _GpsScreenState extends State<GpsScreen> {
-  Position? position;
+  StreamSubscription? _positionStream;
+
+  // Stream<Position>? _streamPosition;
+  Position? _position;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -41,23 +47,47 @@ class _GpsScreenState extends State<GpsScreen> {
       return Future.error(
           'Location permissions are permanently denied, we cannot request permissions.');
     }
-    return await getCurrentPosition();
+    return await getCurrentPositionStream();
+  }
+
+  getCurrentPositionStream() async {
+    _positionStream =
+        Geolocator.getPositionStream(desiredAccuracy: LocationAccuracy.best)
+            .listen((position) {
+      print('getCurrentPositionStream');
+
+      setState(() {
+        _position = position;
+      });
+    });
   }
 
   getCurrentPosition() async {
     Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((val) {
-      setState(() {
-        position = val;
-      });
+      print('getCurrentPosition');
+      if (mounted) {
+        setState(() {
+          _position = val;
+        });
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    if (_timer != null) {
+      _timer!.cancel();
+    }
+    _positionStream!.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('출퇴근 시간 입력'),
+          title: const Text('현재 위치'),
           centerTitle: true,
           backgroundColor: Colors.green,
         ),
@@ -66,16 +96,27 @@ class _GpsScreenState extends State<GpsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                  onPressed: () {
-                    getCurrentPosition();
-                  },
-                  child: const Text('현재 위치 가져오기')),
-              position != null
-                  ? Text(position!.longitude.toString())
+                onPressed: () {
+                  // _timer = Timer.periodic(Duration(milliseconds: 1000), (timer) {
+                  //   getCurrentPosition();
+                  //   print(1);
+                  // });
+                  getCurrentPosition();
+                },
+                child: const Text('현재 위치 가져오기'),
+              ),
+              _position != null
+                  ? Text(_position!.longitude.toString())
                   : const Text('위치를 가져오는 중입니다.'),
-              position != null
-                  ? Text(position!.latitude.toString())
+              _position != null
+                  ? Text(_position!.latitude.toString())
                   : const CircularProgressIndicator(),
+              // _streamPosition != null
+              //     ? Text(_streamPosition!.last.toString())
+              //     : const Text('위치를 가져오는 중입니다.'),
+              // _streamPosition != null
+              //     ? Text(_streamPosition!.latitude.toString())
+              //     : const CircularProgressIndicator(),
             ],
           ),
         ));

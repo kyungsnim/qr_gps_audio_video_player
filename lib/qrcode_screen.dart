@@ -17,6 +17,7 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
   Barcode? result;
   QRViewController? controller;
   String _url = '';
+  String status = 'listen';
 
   // In order to get hot reload to work we need to pause the camera if the platform
   // is android, or resume the camera if the platform is iOS.
@@ -33,24 +34,45 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      appBar: AppBar(
+        title: Text(
+          'QR코드 인식',
+          style: TextStyle(
+            color: Colors.black,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Stack(
         children: <Widget>[
-          Expanded(
-            flex: 5,
-            child: QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
+          QRView(
+            key: qrKey,
+            onQRViewCreated: _onQRViewCreated,
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Center(
+                    child: Container(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  height: MediaQuery.of(context).size.width * 0.7,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.yellow, width: 2),
+                  ),
+                )),
+                SizedBox(height: 10),
+                Text(
+                  'QR코드를 사각형 안에 맞춰주세요.',
+                  style: TextStyle(
+                    color: Colors.yellow,
+                    fontSize: 20,
+                  ),
+                ),
+              ],
             ),
           ),
-          // Expanded(
-          //   flex: 1,
-          //   child: Center(
-          //     child: (result != null)
-          //         ? Text(
-          //         'Barcode Type: ${describeEnum(result!.format)}   Data: ${result!.code}')
-          //         : Text('Scan a code'),
-          //   ),
-          // )
         ],
       ),
     );
@@ -61,10 +83,13 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
     controller.scannedDataStream.listen((scanData) {
       setState(() {
         result = scanData;
-        _url = result!.code!;
+
+        if (result != null) {
+          _url = result!.code!;
+        }
       });
 
-      if(_url != '') {
+      if (_url != '') {
         _launchURL();
       }
     });
@@ -76,6 +101,7 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
     super.dispose();
   }
 
-  void _launchURL() async =>
-      await canLaunch(_url) ? await launch(_url) : throw 'Could not launch $_url';
+  void _launchURL() async => await canLaunch(_url)
+      ? await launch(_url)
+      : throw 'Could not launch $_url';
 }
