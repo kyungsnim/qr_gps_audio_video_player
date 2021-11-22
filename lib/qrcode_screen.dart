@@ -2,8 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:qr_gps_audio_video_player/web_view_qr_link.dart';
 
 class QrcodeScreen extends StatefulWidget {
   const QrcodeScreen({Key? key}) : super(key: key);
@@ -46,9 +47,8 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
       ),
       body: Stack(
         children: <Widget>[
-          QRView(
-            key: qrKey,
-            onQRViewCreated: _onQRViewCreated,
+          Container(
+            color: Colors.black,
           ),
           Center(
             child: Column(
@@ -58,6 +58,10 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
                     child: Container(
                   width: MediaQuery.of(context).size.width * 0.7,
                   height: MediaQuery.of(context).size.width * 0.7,
+                  child: QRView(
+                    key: qrKey,
+                    onQRViewCreated: _onQRViewCreated,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.yellow, width: 2),
                   ),
@@ -81,16 +85,18 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = scanData;
+      if(scanData != null) {
+        setState(() {
+          result = scanData;
 
-        if (result != null) {
-          _url = result!.code!;
+          if (result != null) {
+            _url = result!.code!;
+          }
+        });
+
+        if (_url != '') {
+          Get.to(() => WebViewLink(link: _url));
         }
-      });
-
-      if (_url != '') {
-        _launchURL();
       }
     });
   }
@@ -101,7 +107,7 @@ class _QrcodeScreenState extends State<QrcodeScreen> {
     super.dispose();
   }
 
-  void _launchURL() async => await canLaunch(_url)
-      ? await launch(_url)
-      : throw 'Could not launch $_url';
+  // Future _launchURL() async => await canLaunch(_url)
+  //     ? await launch(_url)
+  //     : throw 'Could not launch $_url';
 }
